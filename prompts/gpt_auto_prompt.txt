@@ -1,0 +1,585 @@
+【Task Objective — Image-Based CNT Information Filling】
+
+This task is strictly limited to retrieving, analyzing, and filling CNT morphology, quality, and catalyst nanoparticle information based on image or spectroscopic evidence contained in the provided PDF.
+
+The attached JSON is the structured base record.
+
+The JSON must be used only to:
+1. identify the existing synthesis records;
+2. preserve the exact synthesis_id values;
+3. determine which target fields are currently missing or blank;
+4. preserve the existing JSON hierarchy.
+
+The PDF is the evidence source for this task.
+
+Do NOT audit, validate, rewrite, reinterpret, or modify any existing non-empty value in the original JSON.
+
+Do NOT create any new synthesis record.
+
+Do NOT change any synthesis_id.
+
+Only output newly obtained image-derived information for fields that are missing or blank in the original JSON.
+
+
+================================================================
+1. IMAGE-BASED RETRIEVAL OVER THE ENTIRE PDF
+================================================================
+
+Inspect the entire provided PDF using image understanding.
+
+Examine all relevant figures and all relevant subpanels, including but not limited to:
+
+- SEM images
+- TEM images
+- HRTEM images
+- STEM images
+- SAED patterns
+- Raman spectra
+- statistical histograms
+- morphology images
+- catalyst nanoparticle images
+- CNT array images
+- CNT forest images
+- CNT fiber or bundle images
+- top-view and cross-sectional images
+- any other visual or spectroscopic evidence relevant to CNT morphology or quality
+
+Do not restrict the analysis to the first relevant figure.
+
+Inspect the entire PDF before producing the final JSON.
+
+
+================================================================
+2. SYNTHESIS MATCHING
+================================================================
+
+The original JSON contains:
+
+"syntheses": [
+    {
+        "synthesis_id": "synthesis_1",
+        ...
+    }
+]
+
+All image-derived information must be assigned to the correct existing synthesis record.
+
+Preserve the synthesis_id EXACTLY as given in the original JSON.
+
+Never invent a synthesis_id.
+
+Never create an additional synthesis.
+
+If a figure cannot be reliably associated with a particular synthesis record, do not assign information from that figure to any synthesis.
+
+
+================================================================
+3. STRICT EXISTING-VALUE RULE
+================================================================
+
+Before outputting a value, inspect the corresponding field in the original JSON.
+
+If the corresponding field already contains a valid non-empty value:
+
+DO NOT output that field.
+
+Do not attempt to correct it.
+
+Do not replace it.
+
+Do not compare the image-derived value against it.
+
+Do not audit its accuracy.
+
+Image recognition in this task is used only to supplement information that is absent from the original JSON.
+
+
+================================================================
+4. ALLOWED OUTPUT FIELDS
+================================================================
+
+Only the following fields may be added.
+
+Under:
+
+product
+
+the permitted fields are:
+
+product.length_mm
+
+product.diameter_nm
+
+product.orientation_score
+
+product.ig_id_ratio
+
+product.purity_score
+
+product.bundle_density_per_um
+
+product.cnt_density_per_um
+
+
+Catalyst nanoparticle size must NOT be written into product.
+
+Catalyst nanoparticle size obtained from image evidence must be written as:
+
+calc_block.np_size_nm
+
+
+No other new fields may be generated.
+
+
+================================================================
+5. SCALAR-ONLY NUMERIC OUTPUT RULE
+================================================================
+
+Every numeric field must contain exactly ONE numeric scalar.
+
+Do NOT output:
+
+- ranges
+- intervals
+- lists
+- arrays
+- tuples
+- minimum/maximum pairs
+- strings containing multiple numeric values
+
+If the image evidence gives a numerical range:
+
+a – b
+
+use the midpoint:
+
+representative_value = (a + b) / 2
+
+For example:
+
+20–40 nm
+
+must be represented as:
+
+30.0
+
+This rule applies to all numeric output fields:
+
+product.length_mm
+
+product.diameter_nm
+
+product.orientation_score
+
+product.ig_id_ratio
+
+product.purity_score
+
+product.bundle_density_per_um
+
+product.cnt_density_per_um
+
+calc_block.np_size_nm
+
+
+================================================================
+6. product.length_mm
+================================================================
+
+Unit:
+
+mm
+
+The value must describe the representative CNT length associated with the corresponding synthesis.
+
+Prioritize direct single-CNT length information when it is visually available.
+
+For vertically aligned CNT arrays or forests, a clearly resolved array/forest height may be used as the representative CNT length when the morphology supports this interpretation.
+
+For fibers or bundles, do not simply use the macroscopic fiber length as the length of one CNT.
+
+If a reliable single-CNT representative length cannot be inferred from the image evidence, leave this field missing.
+
+Convert all other length units to mm before output.
+
+
+================================================================
+7. product.diameter_nm
+================================================================
+
+Unit:
+
+nm
+
+The value must represent the diameter of an individual CNT rather than the diameter of a macroscopic bundle.
+
+Priority:
+
+1. directly resolved single-CNT diameter;
+2. TEM/HRTEM diameter distribution;
+3. representative diameter inferred from clearly resolvable small filament structures.
+
+If only a range is available, use its midpoint.
+
+If single-CNT diameter cannot be reliably inferred, leave the field missing.
+
+
+================================================================
+8. product.orientation_score
+================================================================
+
+Output range:
+
+0 to 1
+
+This value represents CNT orientational alignment.
+
+Use morphological or diffraction evidence such as:
+
+- SEM
+- TEM
+- aligned array morphology
+- orientation distribution
+- SAED
+- clearly resolved filament orientation
+
+Interpretation:
+
+1.0
+= extremely strong alignment; CNTs are essentially parallel.
+
+0.0
+= highly random or disordered orientation.
+
+Intermediate values should reflect the degree of alignment visible in the figure.
+
+Prefer direct CNT-level orientation evidence.
+
+If individual CNTs cannot be clearly resolved, bundle-level or forest-level orientation may be used when the alignment is visually clear.
+
+If the image does not provide sufficient orientation evidence, do not output this field.
+
+
+================================================================
+9. product.ig_id_ratio
+================================================================
+
+Use Raman spectral evidence.
+
+The required stored quantity is:
+
+IG / ID
+
+If the spectrum or figure explicitly provides IG/ID, use it directly.
+
+If the figure provides ID/IG, convert it using:
+
+IG/ID = 1 / (ID/IG)
+
+If D and G peak intensities can be reliably read from the plotted spectrum, their ratio may be estimated.
+
+Do not output this field when the Raman evidence is insufficient.
+
+
+================================================================
+10. product.purity_score
+================================================================
+
+Output range:
+
+0 to 1
+
+This score must be based on visible morphological evidence from SEM/TEM or other relevant images.
+
+Interpretation:
+
+1.0
+= extremely high visible CNT purity, with essentially no visible amorphous carbon, particulate impurities, or unrelated structures.
+
+0.0
+= image dominated by impurities or non-CNT material.
+
+Consider:
+
+- amorphous carbon
+- catalyst residue
+- particulate contamination
+- non-CNT carbon
+- morphological uniformity
+
+Prefer CNT-level evidence.
+
+Bundle-level or array-level evidence may be used when individual CNTs cannot be resolved.
+
+Do not infer purity from descriptive text alone.
+
+If the image evidence is insufficient, do not output this field.
+
+
+================================================================
+11. calc_block.np_size_nm
+================================================================
+
+Unit:
+
+nm
+
+This field represents catalyst nanoparticle size obtained from image evidence.
+
+Use evidence such as:
+
+- TEM
+- HRTEM
+- STEM
+- catalyst nanoparticle images
+- nanoparticle size histograms
+- figures containing clearly defined scale bars
+
+Catalyst nanoparticle size MUST be stored under:
+
+calc_block.np_size_nm
+
+Do NOT output:
+
+product.catalyst_particle_size_nm
+
+Do NOT output:
+
+product.np_size_nm
+
+If a particle-size range is shown, use the midpoint.
+
+If catalyst nanoparticles cannot be reliably distinguished or measured, do not output this field.
+
+
+================================================================
+12. product.bundle_density_per_um
+================================================================
+
+Unit:
+
+bundles/um
+
+The exact JSON field name must be:
+
+bundle_density_per_um
+
+Use ASCII characters exactly as written above.
+
+Do NOT use:
+
+bundle_density_per_µm
+
+Image-based bundle-density estimation is permitted.
+
+When individual CNTs cannot be reliably resolved, each visually distinguishable filament or bundle may be treated as the minimum observable structural unit.
+
+Estimate linear bundle density using a line-intercept or equivalent image-counting method and the image scale bar.
+
+Any valid scale may be used.
+
+For example, if the visible scale is expressed in nm, convert it to um before calculating bundles/um.
+
+If the visible field is larger than 1 um, averaging or interpolation across the image is permitted.
+
+Output one representative scalar value.
+
+
+================================================================
+13. product.cnt_density_per_um
+================================================================
+
+Unit:
+
+CNTs/um
+
+The exact JSON field name must be:
+
+cnt_density_per_um
+
+Use ASCII characters exactly as written above.
+
+Do NOT use:
+
+cnt_density_per_µm
+
+First determine whether individual CNTs can be reliably resolved.
+
+If individual CNTs are clearly resolvable:
+
+direct counting and linear scaling are permitted.
+
+If individual CNTs cannot be reliably resolved:
+
+bundle-based estimation is permitted.
+
+The following procedure may be used:
+
+1. estimate bundle_density_per_um;
+
+2. estimate a representative number of CNTs per observable bundle when supported by image-resolvable information;
+
+3. calculate:
+
+cnt_density_per_um
+=
+bundle_density_per_um
+×
+estimated CNTs per bundle
+
+Any valid image scale may be converted to a per-um density.
+
+Do not report false precision.
+
+Output one representative scalar value.
+
+
+================================================================
+14. STRICT IMAGE-EVIDENCE RULE
+================================================================
+
+Every newly output value must be supported by image or spectroscopic evidence in the provided PDF.
+
+Do not fill a field merely because:
+
+- a typical value is known for that CNT system;
+- a similar paper reports that value;
+- the synthesis conditions suggest a likely value;
+- the original JSON notes imply a value;
+- general CNT knowledge suggests a value.
+
+If image evidence is insufficient:
+
+DO NOT output the field.
+
+Do not use:
+
+null
+
+Do not use:
+
+""
+
+Do not use:
+
+"N/A"
+
+Simply omit that field.
+
+
+================================================================
+15. OUTPUT STRUCTURE
+================================================================
+
+Output only newly obtained image-derived fields.
+
+The output must preserve the original synthesis-based hierarchy.
+
+The required general form is:
+
+{
+  "syntheses": [
+    {
+      "synthesis_id": "synthesis_1",
+      "product": {
+        "orientation_score": 0.95,
+        "purity_score": 0.85,
+        "bundle_density_per_um": 12.0,
+        "cnt_density_per_um": 240.0
+      },
+      "calc_block": {
+        "np_size_nm": 8.5
+      }
+    }
+  ]
+}
+
+The example above illustrates structure only.
+
+Do NOT copy those example numerical values unless independently supported by the provided PDF.
+
+
+================================================================
+16. OMIT EMPTY SECTIONS
+================================================================
+
+Only include a synthesis if at least one valid new image-derived field is available for that synthesis.
+
+Within a synthesis:
+
+If no new product field is available, omit "product".
+
+If no new catalyst nanoparticle size is available, omit "calc_block".
+
+Never output empty objects such as:
+
+"product": {}
+
+or:
+
+"calc_block": {}
+
+
+================================================================
+17. OUTPUT CONTENT RESTRICTIONS
+================================================================
+
+The final output must contain ONLY:
+
+- syntheses
+- synthesis_id
+- newly obtained permitted product fields
+- newly obtained calc_block.np_size_nm
+
+Do NOT output:
+
+growth_mode
+
+data_level
+
+paper
+
+catalysts
+
+process
+
+existing calc_block fields
+
+existing product fields
+
+notes
+
+quality_evidence
+
+calculation explanations
+
+figure descriptions
+
+confidence scores
+
+source citations
+
+reasoning text
+
+comments
+
+
+================================================================
+18. FINAL OUTPUT REQUIREMENT
+================================================================
+
+Return valid JSON only.
+
+Do not include explanatory prose in the JSON.
+
+Do not include Markdown.
+
+Do not include comments.
+
+Do not include fields with missing values.
+
+Do not modify existing non-empty information from the original JSON.
+
+Preserve the exact synthesis_id from the original JSON.
+
+The output is an image-derived PATCH that will later be merged with the original JSON.

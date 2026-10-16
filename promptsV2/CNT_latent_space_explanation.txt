@@ -1,0 +1,192 @@
+CNT 3.0 四个潜在空间向量统一说明（供 DeepSeek / LLM 理解用）
+目的
+本文档将 CNT 3.0 系统中的四个潜在空间向量统一整理为一个面向推理模型的说明文件。目标不是逐字复述提取 prompt，而是把四套规则融合成一个便于理解的总说明：
+每个维度分别代表什么物理含义。
+每个维度大致如何从文献、结构化 JSON、材料性质表、气体性质表中提取或计算。
+模型在解释候选催化剂—工艺包时，应优先从四个潜在空间的物理机制出发，而不是把这些变量看成无含义的数值列。
+总体结构
+CNT 3.0 用四组潜在空间共同描述一次生长实验：
+z_nuc（N1–N18）：成核 / 纳米颗粒基础状态
+z_C（C1–C12）：碳溶解 / 碳供给 / 碳化学势
+z_flow（F1–F18）：流动 / 传输 / 碰撞 / 停留时间
+z_proc（P1–P12）：过程窗口 / 进料组成 / 全局工艺条件
+总维度数为：
+z_nuc：18 维
+z_C：12 维
+z_flow：18 维
+z_proc：12 维
+合计 60 个低维物理向量维度。
+一、z_nuc：成核潜在空间（N1–N18）
+1. 这组向量描述什么
+z_nuc 主要描述：
+催化剂颗粒在成核前后的“材料本征属性 + 颗粒尺度 + 热力学/表面能特征”。
+它回答的问题包括：
+这是什么类型的金属或多金属颗粒？
+颗粒平均原子尺度、熔点、密度、功函数、表面能、碳化物倾向分别如何？
+在当前温度下，颗粒处于相对怎样的热状态？
+已知颗粒尺寸时，颗粒大约包含多少金属原子、表面原子占比大概如何？
+这组向量更偏向“催化剂颗粒自身”的描述，是四个潜在空间里最接近成核底座的一组。
+2. 数据来源和计算逻辑
+z_nuc 的核心输入来自三类来源：
+paper.json：优先读取催化剂组成、温度、颗粒尺寸等
+paper.md：当 JSON 缺失时，从正文显式提取
+elements_properties.txt：只允许从元素性质表读取元素本征性质
+通用规则是：若是多元金属颗粒，很多量采用原子分数加权平均：
+P_weighted = Σ(x_i × P_i)
+其中 x_i 是各金属原子分数。
+3. 18 个维度的物理含义与大致计算
+N1–N3：金属组成主元
+N1：第一主金属及其原子分数
+N2：第二主金属及其原子分数
+N3：第三主金属及其原子分数
+做法：把催化剂中的金属按原子分数从高到低排序。
+N4：加权原子半径
+反映颗粒平均原子尺度
+来自元素性质表中的 atomic_radius
+用加权平均计算
+N5：原子半径标准差
+反映多元合金的尺寸失配程度
+若不同金属原子尺寸差异大，则该值更高
+N6：加权电负性
+由 electronegativity 加权得到
+N7：加权 d-band center
+仅对有 d-band 数据的金属进行有效加权
+若所有金属都缺此数据，则记为 null
+N8：加权熔点 Tm_eff
+用各金属熔点 Tm 做加权平均
+N9：T / Tm_eff
+实际工艺温度相对于等效熔点的归一化程度
+N10：加权密度
+来自 density 加权
+N11：颗粒直径
+直接使用文献报告的 NP diameter（nm）
+N12：颗粒总金属原子数
+把颗粒近似成球形
+用有效原子半径估算单原子体积
+用颗粒体积 / 单原子体积得到总原子数
+N13：表面原子分数代理
+近似取 N12^(-1/3)
+N14：加权功函数
+来自 work_function_eV
+N15：加权表面能
+来自 surface_energy_Jm2
+N16：加权碳化物形成能
+来自 carbide_form_energy_eV_per_C
+N17：碳化物形成能标准差
+反映多元合金在碳化物亲和性上的异质性
+N18：加权氧化 ΔG（Ellingham）
+来自 oxide_DG_kJ_per_molO2
+4. z_nuc 的整体物理意义
+z_nuc 可以理解为：
+“这个催化剂颗粒，在给定尺寸和温度下，具有什么样的成核底层材料状态？”
+它主要决定：
+颗粒在高温下是否稳定
+碳更容易溶入还是停留在表面
+颗粒是否容易重构、合金化、碳化、氧化
+颗粒尺寸与表面暴露是否适合成核
+二、z_C：碳溶解 / 碳供给潜在空间（C1–C12）
+1. 这组向量描述什么
+z_C 主要描述：
+碳从气相进入催化剂颗粒，并在颗粒内外形成碳化学势、碳溶解和表面碳负载的状态。
+2. 数据来源和计算逻辑
+主要来源：
+温度、压力、气体组成、C/M、S/M：paper.json 优先，paper.md 补充
+金属组成与元素性质：来自 elements_properties.txt
+颗粒尺寸或金属原子数：来自 paper.json 或借助 z_nuc 的几何估算
+3. 12 个维度的物理含义与大致计算
+C1：温度 T（K）
+C2：T / Tm_eff
+当前温度相对等效熔点的归一化值
+C3：C/M ratio
+碳/金属比
+反映单位金属对应的碳供给强度
+C4：S/M ratio
+硫/金属比
+若文献里有硫促进剂、硫源调控，则此值很关键
+C5：碳分压 p_C
+所有碳源气体分压之和
+由总压和碳源气体摩尔分数计算
+C6：氢分压 p_H2
+氢气分压
+C7：p_C / p_H2
+碳分压与氢分压比
+是全局碳化学势代理量
+C8：碳化物亲和性
+来自 z_nuc 的加权碳化物形成能
+C9：C8 × (T / Tm_eff)
+把碳化物亲和性与当前热状态耦合
+C10：颗粒总原子数 N_np
+来自 paper.json 直接值，或依据直径与有效原子半径估算
+C11：每颗粒碳原子数 C/NP
+定义为 (C/M) × N_np
+C12：表面碳负载代理
+定义近似为 (C/NP) × N_np^(-1/3)
+4. z_C 的整体物理意义
+z_C 可以理解为：
+“在当前温压和气氛下，这个催化剂颗粒接收到多强的碳供给，并可能形成怎样的表面/体相碳状态？”
+三、z_flow：流动 / 传输潜在空间（F1–F18）
+1. 这组向量描述什么
+z_flow 主要描述：
+反应器几何、气体状态、传质传热、碰撞输运和停留时间。
+2. 数据来源与计算思路
+主要来源：
+几何：paper.json 或 paper.md 的反应器尺寸、喷嘴尺寸、生长区距离
+压力、温度、气体组成：paper.json / paper.md
+气体性质：gas_properties.txt
+总流量或各组分流量：paper.json / paper.md
+3. 18 个维度的物理含义与大致计算
+F1：反应器长度 / 直径  
+F2：注射器直径 / 反应器直径  
+F3：注射器插入深度 / 反应器直径  
+F4：生长区距离 / 反应器直径  
+F5：生长区距离 / 反应器长度
+F6：气体数密度 = P_total / (k_B T)
+F7：平均自由程 = k_B T / (sqrt(2) π d_eff^2 P_total)
+F8：扩散指数代理 = (T^1.75) / P_total
+F9：运动黏度 = μ / ρ
+F10：气体密度 = (P_total × M_mix) / (R T)
+F11：碳数密度 = p_C / (k_B T)
+F12：C–NP 碰撞指数代理 = n_C × sqrt(T)
+F13：催化剂输送模式
+floating / supported / aerosol / unknown
+F14：平均流速 = Q / A
+F15：雷诺数 = (ρ v D_reactor) / μ
+F16：Peclet 数 = (v L_char) / D_eff
+F17：停留时间 = L_reactor / v
+F18：Damkohler 数代理 = τ / t_reaction_proxy
+4. z_flow 的整体物理意义
+z_flow 可以理解为：
+“前驱体、碳源、氢气和颗粒在这个反应器里，是如何被输送、混合、碰撞并停留下来的？”
+四、z_proc：过程窗口潜在空间（P1–P12）
+1. 这组向量描述什么
+z_proc 主要描述：
+不考虑颗粒细节和流场细节时，一次 CNT 生长实验的全局工艺窗口。
+2. 12 个维度的物理含义与大致计算
+P1：温度 T  
+P2：压力 P  
+P3：生长时间 t
+P4：碳源总摩尔分数 C_total  
+P5：氢气摩尔分数 H2  
+P6：惰性气体摩尔分数
+P7：碳源类型  
+P8：碳分压 p_C = C_total × P  
+P9：氢分压 p_H2 = H2 × P  
+P10：p_C / p_H2
+P11：氧化剂氧原子当量分数 O_total
+来自显式给出的 H2O、O2、CO2、CO、NOx 等氧化/刻蚀组分
+P12：O_total / C_total
+3. z_proc 的整体物理意义
+z_proc 可以理解为：
+“这个实验整体处在怎样的温压时间和气氛配方窗口内？”
+五、四个潜在空间之间的关系
+z_nuc：颗粒本征与成核底座
+z_C：碳供给与颗粒耦合
+z_flow：反应器输运环境
+z_proc：宏观工艺窗口
+推荐的解释顺序是：
+先看 z_proc，理解总体工艺窗口
+再看 z_flow，理解传输与停留环境
+再看 z_nuc，理解催化剂颗粒本征
+最后看 z_C，理解碳供给与表面碳负载
+六、给 DeepSeek 的一句话版说明
+CNT 3.0 uses a 60-dimensional physics-informed latent representation composed of four coupled subspaces: z_nuc (N1–N18, nanoparticle/nucleation state), z_C (C1–C12, carbon dissolution and carbon-supply state), z_flow (F1–F18, reactor transport and collision environment), and z_proc (P1–P12, global process-window conditions). These variables are not arbitrary ML features. They are structured physical descriptors extracted or deterministically calculated from catalyst composition, temperature, pressure, gas composition, geometry, flow conditions, nanoparticle size, and tabulated element/gas properties. Interpret each recommendation by connecting these four subspaces into one mechanism-level story, rather than explaining columns independently.

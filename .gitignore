@@ -1,0 +1,186 @@
+# ============================================================
+# AI-assisted CNT project
+# Git ignore rules
+# ============================================================
+
+
+# ------------------------------------------------------------
+# 1. Python virtual environments
+# ------------------------------------------------------------
+
+.venv/
+venv/
+env/
+ENV/
+
+
+# ------------------------------------------------------------
+# 2. Python cache / compiled files
+# ------------------------------------------------------------
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+
+# ------------------------------------------------------------
+# 3. Environment variables / secrets
+# ------------------------------------------------------------
+
+.env
+.env.*
+!.env.example
+
+*.secret
+*.secrets
+*.key
+*.pem
+
+
+# ------------------------------------------------------------
+# 4. IDE / editor files
+# ------------------------------------------------------------
+
+.idea/
+.vscode/
+*.iml
+
+# VS Code local settings
+.history/
+
+# Jupyter
+.ipynb_checkpoints/
+
+
+# ------------------------------------------------------------
+# 5. OS generated files
+# ------------------------------------------------------------
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+
+# ------------------------------------------------------------
+# 6. Temporary / backup files
+# ------------------------------------------------------------
+
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*~
+*.swp
+*.swo
+
+
+# ------------------------------------------------------------
+# 7. Raw and intermediate literature data
+#
+# IMPORTANT:
+# The project does NOT upload the historical literature corpus
+# or intermediate processing data.
+# ------------------------------------------------------------
+
+data/*
+
+# Keep the data directory structure needed for the released
+# dataset, but ignore everything except the final ML dataset.
+!data/11_flattened/
+!data/11_flattened/*
+
+# The only dataset intentionally released to GitHub
+!data/11_flattened/ml_dataset_3p0_full60D.csv
+
+
+# ------------------------------------------------------------
+# 8. Explicitly ignore raw / intermediate data folders
+#
+# These are already covered by data/* above, but listing them
+# explicitly documents the intended repository structure.
+# ------------------------------------------------------------
+
+data/00_raw_papers/
+data/01_markdown/
+data/02_dgrowth/
+data/02_enriched_markdown/
+data/02_extracted_json/
+data/02_logs/
+data/03_routed/
+data/04_leveled/
+data/05_cleaned/
+data/07_image_merged/
+data/07_image_patches/
+data/07_logs/
+data/08_finalized/
+data/08_logs/
+data/09_latent/
+data/09_logs/
+data/10_andjson/
+data/12_external_validation/
+data/备份文件/
+
+
+# ------------------------------------------------------------
+# 9. Model outputs / generated results
+#
+# Code is kept, generated results are not.
+# ------------------------------------------------------------
+
+outputs/
+outputs/**
+
+
+# ------------------------------------------------------------
+# 10. Generated figures / temporary analysis outputs
+# ------------------------------------------------------------
+
+*.log
+*.out
+
+
+# ------------------------------------------------------------
+# 11. Local machine / experiment artifacts
+# ------------------------------------------------------------
+
+*.sqlite
+*.db
+
+# Local checkpoints
+*.ckpt
+*.pth
+*.pt
+*.onnx
+
+# Large model files
+*.bin
+*.safetensors
+
+
+# ------------------------------------------------------------
+# 12. Keep the three manuscript-related world map figures
+#
+# These are NOT ignored by the rules above and therefore remain
+# tracked by Git:
+#
+# worldmap001.png
+# worldmap002.png
+# worldmap003.png
+# ------------------------------------------------------------
+
+
+# ------------------------------------------------------------
+# 13. Git local files
+# ------------------------------------------------------------
+
+*.orig
